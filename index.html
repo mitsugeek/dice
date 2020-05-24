@@ -1,0 +1,55 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <title>サイコロ </title>
+</head>
+<body >
+    参考：<a href="http://a.teall.info/dice/">http://a.teall.info/dice/</a>
+
+    <div>
+        <table style="width:100%;">
+            <tr>
+                <td style="text-align: center;vertical-align: middle;height:500px;">
+                    <button id="throw">サイコロをふる</button><br />
+                    結果：<span id="label"></span>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="canvas" style="position:absolute;left:0;top:0;display:none;"></div>
+    <script src="./three.min.js"></script>
+    <script src="./cannon.min.js"></script>
+    <script src="./dice.js"></script>
+    <script type="text/javascript" defer="defer">
+
+    var diceTable = document.getElementById('canvas');
+
+    //ダイス生成
+    var $box = new $dice.dice_box(diceTable, { w: 500, h: 300 });
+    
+    document.getElementById('throw').addEventListener('click', function(ev){
+        ev.stopPropagation();
+        //サイコロ を投げる
+        $box.start_throw(function(vectors, notation, callback){
+            //サイコロ を投げる寸前の処理
+            document.getElementById('label').innerHTML = "";
+            document.getElementById('throw').disabled = true;
+            diceTable.style.display = 'block';        
+            diceTable.style.width = window.innerWidth - 1 + 'px';
+            diceTable.style.height = window.innerHeight - 1 + 'px';
+            $box.reinit(diceTable, { w: 500, h: 300 });    
+            callback();
+        }, function(notation, result){
+            //サイコロ 投げた後の処理
+            document.getElementById('throw').disabled = false;
+            document.getElementById('label').innerHTML = result.join(' ');
+            diceTable.style.display = 'none';
+        });
+    }, false);
+
+    </script>
+</body>
+</html>
