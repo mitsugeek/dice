@@ -240,7 +240,7 @@ window.$dice = {};
         if (!this.d6_geometry) {
             //ジオメトリ(形状)作成
             //this.d6_geometry = this.create_d6_geometry(this.scale * 0.9);
-            this.d6_geometry = this.create_d6_geometry(100);
+            this.d6_geometry = this.create_d6_geometry(150);
         }
         if (!this.dice_material) {
             //マテリアル作成
