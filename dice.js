@@ -218,7 +218,7 @@ window.$dice = {};
         shading: THREE.FlatShading,
     };
     this.label_color = '#FFFFFF';
-    this.dice_color = '#000000';
+    this.dice_color = '#224e81';
     this.ambient_light_color = 0xf0f5fb;
     //this.spot_light_color = 0xefdfd5;
     this.spot_light_color = 0xffffff;
@@ -274,7 +274,7 @@ window.$dice = {};
     var that = this;
 
     this.dice_box = function(container, dimentions) {
-        this.use_adapvite_timestep = true;
+        this.use_adapvite_timestep = false;
 
         this.dices = [];
 
@@ -337,8 +337,8 @@ window.$dice = {};
         this.world.addContactMaterial(new CANNON.ContactMaterial(
                     desk_body_material,     //机
                     this.dice_body_material, //ダイス
-                    0.01, //摩擦係数
-                    0.5   //反発係数
+                    0.11, //摩擦係数
+                    0.1   //反発係数
         ));
 
         //壁とダイスが接触した際の処理
@@ -723,7 +723,6 @@ window.$dice = {};
         //
 
         this.prepare_dices_for_roll(vectors);
-
         /*
         if (values != undefined && values.length) {
             this.use_adapvite_timestep = false;
@@ -743,8 +742,9 @@ window.$dice = {};
 
     }
 
+
     //ダイスを投げる
-    function throw_dices(box, before_roll, after_roll) {
+    function throw_dices(box, before_roll, after_roll, vectors_retry) {
         var vector = { x: 1, y: 1};
         var boost=1;
         var dist=1;
@@ -753,6 +753,9 @@ window.$dice = {};
         function roll() {
             if (after_roll) {
                 box.clear();
+                if(vectors_retry){
+                    vectors = vectors_retry;
+                }
                 box.roll(vectors, notation.result, function(result) {
                     if (after_roll) after_roll.call(box, notation, result);
                     box.rolling = false;
@@ -762,22 +765,28 @@ window.$dice = {};
         }
 
         var notation = { set: ["d6"], constant: 0, result: [], error: false };
-        var vectors = box.generate_vectors(notation, vector, boost);
+        var vectors = null;
+        console.log(vectors_retry);
+        if(vectors_retry){
+            vectors = vectors_retry;
+        } else {
+            vectors = box.generate_vectors(notation, vector, boost);
+        }
         box.rolling = true;
         if (before_roll) {
             before_roll.call(box, vectors, notation, roll);
         } else {
             roll();
         }
+        return vectors;
     }
 
     //サイコロ を投げる
-    this.dice_box.prototype.start_throw = function(before_roll, after_roll) {
+    this.dice_box.prototype.start_throw = function(before_roll, after_roll, vectors_retry) {
         var box = this;
         //投げている途中の場合、処理終了
         if (box.rolling) return;
-        throw_dices(box, before_roll, after_roll);
-
+        return throw_dices(box, before_roll, after_roll, vectors_retry);
     }
 
 }).apply($dice);

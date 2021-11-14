@@ -4,51 +4,198 @@
 <head>
     <meta charset="utf-8">
     <title>サイコロ </title>
+	
+	<link href="tailwind.min.css" rel="stylesheet">
 </head>
 <body >
-    参考：<a href="http://a.teall.info/dice/">http://a.teall.info/dice/</a>
 
-    <div>
-        <table style="width:100%;font-size:100px;">
-            <tr>
-                <td style="text-align: center;vertical-align: middle;height:500px;">
-                    <button id="throw" style="font-size:100px;">サイコロをふる</button><br />
-                    結果：<span id="label"></span>
-                </td>
-            </tr>
-        </table>
+    <div id="app" class="p-2">
+		<div class="w-full lg:max-w-7xl mx-auto text-center p-4">
+
+
+			<div class="flex sticky top-0">
+				<div class="w-1/3">
+					<button id="throw" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" v-on:click="throw_dice">サイコロをふる</button>
+				</div>
+				<div class="flex w-2/3">
+					<div class="bg-blue-200 text-center w-1/3 flex justify-center items-center">結果</div>
+					<div class="border-blue-200 border flex-auto text-center flex justify-center items-center"> {{result}} </div>
+				</div>
+			</div>
+
+
+			<div class="w-full lg:w-96  m-auto">
+				<div>合計回数：{{ sum_count }} 回</div>
+				<div class="flex flex-wrap w-full">
+					<div v-for="(item, idx) in result_box" :class="'border-t border-b border-r w-1/6 text-right p-2' + (idx == '1' ? ' border-l':'')">
+						{{ idx }}
+					</div>
+					<div v-for="(item, idx) in result_box" :class="'border-b border-r  w-1/6 text-right p-2' + (idx == '1' ? ' border-l':'')" >
+						{{item}}回
+					</div>
+				</div>
+				<div>
+					<div class="chart-container" style="">
+					    <canvas id="myChart" ></canvas>
+					</div>
+					
+				</div>
+			</div>
+
+			<div class="mt-2 overflow-scroll m-auto" style="height:35vh">
+				<div class="sticky top-0">
+					<div class="flex" >
+						<div class="border-t border-r border-b border-l w-1/3 bg-blue-200">回数</div>
+						<div class="border-t border-r border-b w-1/3 bg-blue-200">結果</div>
+						<div class="border-t border-r border-b w-1/3 bg-blue-200">再現</div>
+					</div>
+				</div>
+				<div class="flex flex-col-reverse flex-wrap">
+				<div v-for="(item, idx) in resultList" class="flex flex-auto" >
+					<div class=" w-1/3 border-r border-b border-l text-right h-12 p-1">{{ (idx + 1) }}回目</div>
+					<div class=" w-1/3 border-r border-b text-right h-12 p-1">{{item.value}}</div>
+					<div class=" w-1/3 border-r border-b text-center h-12 p-1"><button v-on:click="re_throw_dice(item)" class="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">再現</button></div>
+				</div>
+				</div>
+			</div>
+			<div class="mt-2">
+				<div class="font-bold">special thanks</div>
+				<ul>
+					<li><a href="http://www.teall.info/2014/01/online-3d-dice-roller.html" target="_blank">tealyatina: Online 3D dice roller</a></li>
+					<li><a href="https://www.chartjs.org/" target="_blank">chart.js</a></li>
+					<li><a href="https://v3.vuejs.org/" target="_blank">vue3</a></li>
+					<li><a href="https://tailwindcss.com/" target="_blank">tailwindcss</a></li>
+					<li><a href="https://threejs.org/" target="_blank">three.js</a></li>
+					<li><a href="https://schteppe.github.io/cannon.js/" target="_blank">cannon.js</a></li>
+
+				</ul>
+			</div>
+		</div>
+
     </div>
 
-    <div id="canvas" style="position:absolute;left:0;top:0;display:none;"></div>
+    <div id="canvas" style="position:absolute;left:0;top:0;display:none;" class="sticky top-0"></div>
+    <script src="./vue3.js"></script>
+	<script src="./chart.min.js" ></script>
     <script src="./three.min.js"></script>
     <script src="./cannon.min.js"></script>
     <script src="./dice.js"></script>
     <script type="text/javascript" defer="defer">
 
-    var diceTable = document.getElementById('canvas');
+
+	var diceTable = document.getElementById('canvas');
 
     //ダイス生成
-    var $box = new $dice.dice_box(diceTable, { w: 500, h: 300 });
-    
-    document.getElementById('throw').addEventListener('click', function(ev){
-        ev.stopPropagation();
-        //サイコロ を投げる
-        $box.start_throw(function(vectors, notation, callback){
-            //サイコロ を投げる寸前の処理
-            document.getElementById('label').innerHTML = "";
-            document.getElementById('throw').disabled = true;
-            diceTable.style.display = 'block';        
-            diceTable.style.width = window.innerWidth - 1 + 'px';
-            diceTable.style.height = window.innerHeight - 1 + 'px';
-            $box.reinit(diceTable, { w: 500, h: 300 });    
-            callback();
-        }, function(notation, result){
-            //サイコロ 投げた後の処理
-            document.getElementById('throw').disabled = false;
-            document.getElementById('label').innerHTML = result.join(' ');
-            diceTable.style.display = 'none';
-        });
-    }, false);
+	var $box = new $dice.dice_box(diceTable, { w: 300, h: 300 });
+
+	var $chart = null;
+
+	const app = Vue.createApp({
+		data() {
+			return {
+				result:null,
+				resultList:[],
+				sum_count:0,
+				result_box:{1:0,2:0,3:0,4:0,5:0,6:0},
+				myChart:null,
+			}
+		},
+		mounted() {
+			this.$nextTick(function () {
+
+
+			    $chart = new Chart(document.getElementById('myChart').getContext('2d'), {
+				    type: 'bar',
+				    data: {
+				        labels: ['1', '2', '3', '4', '5', '6'],
+				        datasets: [{
+				            label: '割合',
+				            data: [0,0,0,0,0,0],
+				            backgroundColor: [
+				                'rgba(255, 99, 132, 0.2)','rgba(54, 162, 235, 0.2)','rgba(255, 206, 86, 0.2)','rgba(75, 192, 192, 0.2)','rgba(153, 102, 255, 0.2)','rgba(255, 159, 64, 0.2)'
+				            ],
+				            borderColor: [
+				                'rgba(255, 99, 132, 1)','rgba(54, 162, 235, 1)','rgba(255, 206, 86, 1)','rgba(75, 192, 192, 1)','rgba(153, 102, 255, 1)','rgba(255, 159, 64, 1)'
+				            ],
+				            borderWidth: 1
+				        }]
+				    },
+				    options: {
+						responsive:true,
+				        scales: {
+				            y: {
+				                beginAtZero: true
+				            }
+				        },
+						legend:{
+						    labels:{
+						      filter: function(items) {
+						        return false;
+						      }
+						    }
+						}
+				    }
+				});
+
+			})
+		},
+		methods:{
+			calc(value){
+				this.sum_count += 1;
+
+				this.result_box[value] += 1;
+
+				let data = [];
+				for(let i = 0; i <= 6; i++){
+					data[i] = this.result_box[i+1];
+				}
+				console.log($chart.data);
+				$chart.data.datasets[0].data = data;
+				$chart.update();
+			},
+			throw_dice(){
+				let self = this;
+		        //サイコロ を投げる
+				let resultObject = {vec:null, value:null};
+		        resultObject.vec = $box.start_throw(function(vectors, notation, callback){
+		            //サイコロ を投げる寸前の処理
+		            document.getElementById('throw').disabled = true;
+		            diceTable.style.display = 'block';        
+		            diceTable.style.width = window.innerWidth - 1 + 'px';
+		            diceTable.style.height = window.innerHeight - 1 + 'px';
+		            $box.reinit(diceTable, { w: 500, h: 300 });    
+		            callback();
+		        }, function(notation, result){
+		            //サイコロ 投げた後の処理
+		            document.getElementById('throw').disabled = false;
+                    resultObject.value = result.join(' ');
+					self.result = resultObject.value;
+		            diceTable.style.display = 'none';
+					self.resultList.push(resultObject);
+					self.calc(resultObject.value);
+		        });
+			},
+			re_throw_dice(item){
+
+		        let result_vectors = $box.start_throw(function(vectors, notation, callback){
+		            //サイコロ を投げる寸前の処理
+		            document.getElementById('throw').disabled = true;
+		            diceTable.style.display = 'block';        
+		            diceTable.style.width = window.innerWidth - 1 + 'px';
+		            diceTable.style.height = window.innerHeight - 1 + 'px';
+		            $box.reinit(diceTable, { w: 500, h: 300 });    
+		            callback();
+		        }, function(notation, result){
+		            //サイコロ 投げた後の処理
+		            document.getElementById('throw').disabled = false;
+		            self.result = result.join(' ');
+		            diceTable.style.display = 'none';
+		        }, item.vec);
+				console.log(result_vectors);
+			},
+		}
+	})
+	const vm = app.mount('#app');
 
     </script>
 </body>
